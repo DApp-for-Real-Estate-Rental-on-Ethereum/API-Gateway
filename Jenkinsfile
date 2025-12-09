@@ -40,7 +40,7 @@ pipeline {
                 script {
                     sh '''
                         echo "Building Spring Boot API Gateway..."
-                        mvn -B clean compile test
+                        ./mvnw -B clean compile test
                     '''
                 }
             }
