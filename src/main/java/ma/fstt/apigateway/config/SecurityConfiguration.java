@@ -43,6 +43,15 @@ public class SecurityConfiguration {
                                 .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 // Health checks
                                 .pathMatchers("/actuator/**", "/health", "/api/health").permitAll()
+                                // TEMPORARY dev convenience: allow booking read endpoints without JWT
+                                // so the frontend host dashboard can load without full auth setup.
+                                // TODO: tighten this in production (require authentication/roles).
+                                .pathMatchers(HttpMethod.GET,
+                                        "/api/bookings/**",
+                                        "/api/bookings/current/**",
+                                        "/api/bookings/negotiations/**",
+                                        "/api/bookings/confirmed/**"
+                                ).permitAll()
                                 // All other endpoints require authentication
                                 .anyExchange().authenticated()
                 )
