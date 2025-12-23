@@ -40,6 +40,7 @@ pipeline {
                 script {
                     sh '''
                         echo "Building Spring Boot API Gateway..."
+                        chmod +x ./mvnw
                         ./mvnw -B clean compile test
                     '''
                 }
@@ -127,6 +128,8 @@ pipeline {
                     docker rmi localhost:5000/real-estate-api-gateway:${BUILD_NUMBER} || true
                 """
             }
+            // Clean workspace
+            deleteDir()
         }
         success {
             echo "API Gateway pipeline completed successfully! 🎉"
