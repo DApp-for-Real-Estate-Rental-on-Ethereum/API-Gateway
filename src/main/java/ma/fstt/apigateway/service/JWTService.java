@@ -1,6 +1,5 @@
 package ma.fstt.apigateway.service;
 
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -24,8 +23,7 @@ public class JWTService {
     @Value("${security.jwt.expiration-time}")
     private Long jwtExpiration;
 
-    private Key getSignInKey()
-    {
+    private Key getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
@@ -46,19 +44,16 @@ public class JWTService {
         return java.util.Collections.emptySet();
     }
 
-    public String extractUsername(String token)
-    {
+    public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver)
-    {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token)
-    {
+    private Claims extractAllClaims(String token) {
         return Jwts
                 .parser()
                 .verifyWith((SecretKey) getSignInKey())
@@ -67,19 +62,16 @@ public class JWTService {
                 .getPayload();
     }
 
-    public Boolean isTokenValid(String token)
-    {
-        return  !isTokenExpired(token);
+    public Boolean isTokenValid(String token) {
+        return !isTokenExpired(token);
     }
 
-    private Boolean isTokenExpired(String token)
-    {
+    private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    private Date extractExpiration(String token)
-    {
-        return extractClaim(token , Claims::getExpiration);
+    private Date extractExpiration(String token) {
+        return extractClaim(token, Claims::getExpiration);
     }
 
 }

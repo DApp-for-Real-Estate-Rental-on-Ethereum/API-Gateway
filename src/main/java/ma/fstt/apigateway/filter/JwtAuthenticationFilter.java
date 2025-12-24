@@ -33,7 +33,8 @@ public class JwtAuthenticationFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String authorizationHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        // If no Authorization header or doesn't start with "Bearer ", skip JWT validation
+        // If no Authorization header or doesn't start with "Bearer ", skip JWT
+        // validation
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             return chain.filter(exchange);
         }
@@ -58,7 +59,7 @@ public class JwtAuthenticationFilter implements WebFilter {
                             .contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
                 })
                 .onErrorResume(e -> {
-                    log.warn("JWT validation failed for request to {}: {}", 
+                    log.warn("JWT validation failed for request to {}: {}",
                             exchange.getRequest().getPath(), e.getMessage());
                     // Continue the filter chain without authentication
                     // Spring Security will handle authorization
@@ -77,13 +78,13 @@ public class JwtAuthenticationFilter implements WebFilter {
 
             User principal = new User(username, "", authorities);
 
-            Authentication authentication =
-                    new UsernamePasswordAuthenticationToken(principal, null, authorities);
+            Authentication authentication = new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
             return Mono.just(authentication);
 
-        } catch (ExpiredJwtException | MalformedJwtException | IllegalArgumentException e) {
-            log.debug("JWT parsing error: {}", e.getMessage());
+        } catch (ExpiredJwtException | MalformedJwtException | IllegalArgumentException
+                | io.jsonwebtoken.security.SignatureException e) {
+            log.error("JWT parsing error: {}", e.getMessage());
             return Mono.error(e);
         }
     }

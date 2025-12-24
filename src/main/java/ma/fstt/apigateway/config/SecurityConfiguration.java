@@ -27,15 +27,15 @@ public class SecurityConfiguration {
 
     final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfiguration(JwtAuthenticationFilter  jwtAuthenticationFilter) {
+    public SecurityConfiguration(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        http.
-                csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(ServerHttpSecurity.CorsSpec::disable) // Disable Spring Security CORS - handled by CorsWebFilter
+        http
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(
                         exchange -> exchange
                                 // Public endpoints - no authentication required
@@ -43,22 +43,11 @@ public class SecurityConfiguration {
                                 .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 // Health checks
                                 .pathMatchers("/actuator/**", "/health", "/api/health").permitAll()
-                                // TEMPORARY dev convenience: allow booking read endpoints without JWT
-                                // so the frontend host dashboard can load without full auth setup.
-                                // TODO: tighten this in production (require authentication/roles).
-                                .pathMatchers(HttpMethod.GET,
-                                        "/api/bookings/**",
-                                        "/api/bookings/current/**",
-                                        "/api/bookings/negotiations/**",
-                                        "/api/bookings/confirmed/**"
-                                ).permitAll()
+
                                 // All other endpoints require authentication
-                                .anyExchange().authenticated()
-                )
-                .exceptionHandling(exchange ->
-                        exchange
-                                .authenticationEntryPoint(authenticationEntryPoint())
-                )
+                                .anyExchange().authenticated())
+                .exceptionHandling(exchange -> exchange
+                        .authenticationEntryPoint(authenticationEntryPoint()))
                 .addFilterAfter(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION);
 
         return http.build();
@@ -71,20 +60,18 @@ public class SecurityConfiguration {
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://127.0.0.1:3000",
-                "http://127.0.0.1:3001"
-        ));
+                "http://127.0.0.1:3001"));
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         // Use specific headers instead of "*" to avoid conflicts
         // Include X-User-Id and X-User-Roles which are added by JwtAuthenticationFilter
         corsConfig.setAllowedHeaders(Arrays.asList(
                 "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin",
                 "Access-Control-Request-Method", "Access-Control-Request-Headers",
-                "X-User-Id", "X-User-Roles", "x-user-id", "x-user-roles"  // Case-insensitive support
+                "X-User-Id", "X-User-Roles", "x-user-id", "x-user-roles" // Case-insensitive support
         ));
         // Expose custom headers to the frontend
         corsConfig.setExposedHeaders(Arrays.asList(
-                "X-User-Id", "X-User-Roles", "Authorization"
-        ));
+                "X-User-Id", "X-User-Roles", "Authorization"));
         corsConfig.setAllowCredentials(true);
         corsConfig.setMaxAge(3600L);
 
@@ -92,17 +79,14 @@ public class SecurityConfiguration {
         source.registerCorsConfiguration("/**", corsConfig);
         return source;
     }
-    
+
     /**
-     * CorsWebFilter to handle CORS for all requests (including actual requests, not just preflight).
-     * This is the recommended way to handle CORS in Spring WebFlux/Spring Cloud Gateway.
+     * CorsWebFilter to handle CORS for all requests (including actual requests, not
+     * just preflight).
+     * This is the recommended way to handle CORS in Spring WebFlux/Spring Cloud
+     * Gateway.
      * It will add CORS headers to all responses, not just OPTIONS requests.
      */
-    @Bean
-    public CorsWebFilter corsWebFilter() {
-        return new CorsWebFilter(corsConfigurationSource());
-    }
-    
 
     @Bean
     public ServerAuthenticationEntryPoint authenticationEntryPoint() {
@@ -111,22 +95,11 @@ public class SecurityConfiguration {
             var response = exchange.getResponse();
             var request = exchange.getRequest();
             String origin = request.getHeaders().getFirst("Origin");
-            
+
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-            
+
             // Add CORS headers to error responses
-            if (origin != null && isAllowedOrigin(origin)) {
-                response.getHeaders().set("Access-Control-Allow-Origin", origin);
-                response.getHeaders().set("Access-Control-Allow-Credentials", "true");
-                response.getHeaders().set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS");
-                response.getHeaders().set("Access-Control-Allow-Headers", 
-                    "Authorization,Content-Type,X-Requested-With,Accept,Origin," +
-                    "Access-Control-Request-Method,Access-Control-Request-Headers," +
-                    "X-User-Id,X-User-Roles,x-user-id,x-user-roles");
-                response.getHeaders().set("Access-Control-Expose-Headers", 
-                    "X-User-Id,X-User-Roles,Authorization");
-            }
 
             Map<String, Object> body = new HashMap<>();
 
@@ -134,7 +107,6 @@ public class SecurityConfiguration {
             body.put("error", "Unauthorized");
             body.put("message", ex.getMessage());
             body.put("path", request.getPath().value());
-
 
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -146,13 +118,5 @@ public class SecurityConfiguration {
             }
         };
     }
-    
-    private boolean isAllowedOrigin(String origin) {
-        return origin != null && (
-            origin.equals("http://localhost:3000") ||
-            origin.equals("http://localhost:3001") ||
-            origin.equals("http://127.0.0.1:3000") ||
-            origin.equals("http://127.0.0.1:3001")
-        );
-    }
+
 }
