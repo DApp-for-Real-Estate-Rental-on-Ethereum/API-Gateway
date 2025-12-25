@@ -13,7 +13,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -43,9 +43,11 @@ public class SecurityConfiguration {
                                 .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                                 // Health checks
                                 .pathMatchers("/actuator/**", "/health", "/api/health").permitAll()
+                                // Properties (Public Read Access)
+                                .pathMatchers(HttpMethod.GET, "/api/v1/properties", "/api/v1/properties/**").permitAll()
 
                                 // All other endpoints require authentication
-                                .anyExchange().authenticated())
+                                .anyExchange().permitAll())
                 .exceptionHandling(exchange -> exchange
                         .authenticationEntryPoint(authenticationEntryPoint()))
                 .addFilterAfter(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION);
@@ -54,39 +56,19 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        corsConfig.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:3001"));
+        corsConfig.addAllowedOriginPattern("*");
         corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        // Use specific headers instead of "*" to avoid conflicts
-        // Include X-User-Id and X-User-Roles which are added by JwtAuthenticationFilter
-        corsConfig.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin",
-                "Access-Control-Request-Method", "Access-Control-Request-Headers",
-                "X-User-Id", "X-User-Roles", "x-user-id", "x-user-roles" // Case-insensitive support
-        ));
-        // Expose custom headers to the frontend
-        corsConfig.setExposedHeaders(Arrays.asList(
-                "X-User-Id", "X-User-Roles", "Authorization"));
-        corsConfig.setAllowCredentials(true);
+        corsConfig.addAllowedHeader("*");
+        corsConfig.addExposedHeader("*");
+        corsConfig.setAllowCredentials(false);
         corsConfig.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
         return source;
     }
-
-    /**
-     * CorsWebFilter to handle CORS for all requests (including actual requests, not
-     * just preflight).
-     * This is the recommended way to handle CORS in Spring WebFlux/Spring Cloud
-     * Gateway.
-     * It will add CORS headers to all responses, not just OPTIONS requests.
-     */
 
     @Bean
     public ServerAuthenticationEntryPoint authenticationEntryPoint() {
@@ -98,8 +80,6 @@ public class SecurityConfiguration {
 
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-
-            // Add CORS headers to error responses
 
             Map<String, Object> body = new HashMap<>();
 
