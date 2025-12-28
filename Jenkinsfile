@@ -47,6 +47,21 @@ pipeline {
             }
         }
 
+        stage('Code Quality Analysis') {
+            steps {
+                script {
+                    sh '''
+                        echo "Running SonarQube analysis..."
+                        chmod +x ./mvnw
+                        ./mvnw sonar:sonar \
+                          -Dsonar.projectKey=real-estate-api-gateway \
+                          -Dsonar.host.url=http://localhost:9000 \
+                          -Dsonar.login=${SONARQUBE_TOKEN} || true
+                    '''
+                }
+            }
+        }
+
         stage('Publish Test Results') {
             steps {
                 junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
