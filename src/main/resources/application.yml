@@ -1,0 +1,69 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        # Auth Service
+        - id: auth-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
+          predicates:
+            - Path=/api/v1/auth/**
+
+        # User Service
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
+          predicates:
+            - Path=/api/v1/users/**
+        
+        # Property Service
+        - id: property-service
+          uri: ${PROPERTY_SERVICE_URL:http://property-service:8081}
+          predicates:
+            - Path=/api/v1/properties/**
+        
+        # Booking Service
+        - id: booking-service
+          uri: ${BOOKING_SERVICE_URL:http://booking-service:8083}
+          predicates:
+            - Path=/api/bookings/**
+        
+        # Payment Service
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://payment-service:8085}
+          predicates:
+            - Path=/api/payments/**
+        
+        # Reclamation Service
+        - id: reclamation-service
+          uri: ${RECLAMATION_SERVICE_URL:http://reclamation-service:8091}
+          predicates:
+            - Path=/api/reclamations/**
+        
+        # Admin Reclamation Service
+        - id: admin-reclamation-service
+          uri: ${RECLAMATION_SERVICE_URL:http://reclamation-service:8091}
+          predicates:
+            - Path=/api/admin/reclamations/**
+        
+        # Notification Service
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://notification-service:8084}
+          predicates:
+            - Path=/api/notifications/**
+        
+        # AI Service - Market Trends
+        - id: market-trends-api
+          uri: ${AI_SERVICE_URL:http://pricing-api:8000}
+          predicates:
+            - Path=/api/market-trends/**
+        
+        # AI Service - Recommendations
+        - id: recommendations-api
+          uri: ${AI_SERVICE_URL:http://pricing-api:8000}
+          predicates:
+            - Path=/api/recommendations/**
+        
+        # AI Service - Tenant Risk
+        - id: tenant-risk-api
+          uri: ${AI_SERVICE_URL:http://pricing-api:8000}
+          predicates:
+            - Path=/api/tenant-risk/**

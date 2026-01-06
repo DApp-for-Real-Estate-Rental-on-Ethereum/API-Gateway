@@ -76,8 +76,6 @@ public class SecurityConfiguration {
         return (ServerWebExchange exchange, AuthenticationException ex) -> {
             var response = exchange.getResponse();
             var request = exchange.getRequest();
-            String origin = request.getHeaders().getFirst("Origin");
-
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
@@ -90,6 +88,7 @@ public class SecurityConfiguration {
 
             try {
                 ObjectMapper mapper = new ObjectMapper();
+                @SuppressWarnings("null")
                 byte[] bytes = mapper.writeValueAsBytes(body);
                 var buffer = response.bufferFactory().wrap(bytes);
                 return response.writeWith(Mono.just(buffer));
