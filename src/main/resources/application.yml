@@ -2,6 +2,12 @@ spring:
   cloud:
     gateway:
       routes:
+        # Static uploads from Property Service
+        - id: uploads-service
+          uri: ${PROPERTY_SERVICE_URL:http://property-service:8081}
+          predicates:
+            - Path=/uploads/**
+        
         # Auth Service
         - id: auth-service
           uri: ${USER_SERVICE_URL:http://user-service:8082}
